@@ -122,7 +122,17 @@ function irrMensal(capex, ebitdaMensal, meses) {
   return (lo + hi) / 2;
 }
 
-function Chip({ label, value, onChange, suffix, step = 1 }) {
+function Chip({ label, value, onChange, suffix, step = 1, bare = false }) {
+  if (bare) {
+    return (
+      <span className="inline-flex items-center gap-1 justify-end">
+        <input type="number" value={value} step={step}
+          onChange={(e) => onChange(e.target.value === "" ? 0 : parseFloat(e.target.value))}
+          className="bg-transparent outline-none text-sm font-semibold text-right" style={{ width: 64, color: "#111" }} />
+        {suffix && <span className="text-xs" style={{ color: BRAND.muted }}>{suffix}</span>}
+      </span>
+    );
+  }
   return (
     <div className="flex items-center gap-1.5 rounded-full px-3 py-1.5" style={{ border: `1px solid ${BRAND.border}`, background: "#F7F7F5" }}>
       <span className="text-xs" style={{ color: BRAND.muted }}>{label}</span>
@@ -134,7 +144,15 @@ function Chip({ label, value, onChange, suffix, step = 1 }) {
   );
 }
 
-function SelectChip({ label, value, options, onChange }) {
+function SelectChip({ label, value, options, onChange, bare = false }) {
+  if (bare) {
+    return (
+      <select value={value} onChange={(e) => onChange(e.target.value)}
+        className="bg-transparent outline-none text-sm font-semibold text-right" style={{ color: "#111" }}>
+        {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+      </select>
+    );
+  }
   return (
     <div className="flex items-center gap-1.5 rounded-full px-3 py-1.5" style={{ border: `1px solid ${BRAND.border}`, background: "#F7F7F5" }}>
       <span className="text-xs" style={{ color: BRAND.muted }}>{label}</span>
@@ -142,6 +160,15 @@ function SelectChip({ label, value, options, onChange }) {
         className="bg-transparent outline-none text-xs font-semibold" style={{ color: "#111" }}>
         {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
       </select>
+    </div>
+  );
+}
+
+function FieldRow({ label, children }) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-2" style={{ borderBottom: `1px solid ${BRAND.border}` }}>
+      <span className="text-xs" style={{ color: BRAND.muted }}>{label}</span>
+      <div className="text-sm text-right" style={{ color: "#111" }}>{children}</div>
     </div>
   );
 }
@@ -401,7 +428,9 @@ function RelatorioViabilidade() {
           body { background: white !important; }
           .report-page { box-shadow: none !important; margin: 0 !important; border-radius: 0 !important; }
           input, textarea, select { border: none !important; background: transparent !important; }
+          select { -webkit-appearance: none !important; appearance: none !important; padding-right: 0 !important; }
           iframe { display: none !important; }
+          .page-break { page-break-after: always; break-after: page; }
         }
         @page { size: A4; margin: 12mm; }
         input:focus, textarea:focus, select:focus { outline: 2px solid ${BRAND.green}55; }
@@ -423,85 +452,97 @@ function RelatorioViabilidade() {
 
       <div className="flex justify-center pb-10 px-4">
         <div className="report-page w-full max-w-3xl rounded-2xl overflow-hidden" style={{ background: "white", boxShadow: "0 1px 3px rgba(0,0,0,0.12)" }}>
-          {/* header */}
-          <div className="px-8 py-6 flex items-start justify-between" style={{ background: BRAND.navy }}>
-            <div>
-              <img src={LOGO_SRC} alt="Lumie Solar" style={{ height: 30, marginBottom: 10 }} />
-              <h1 className="text-white text-xl font-semibold">Análise de viabilidade · Novo ponto</h1>
-              <div className="text-sm mt-1" style={{ color: "#B9C2CF" }}>{pontoNome}</div>
+          {/* banner / cabeçalho */}
+          <div style={{ background: BRAND.navy }}>
+            <div className="px-8 pt-5 flex justify-end">
+              <span className="text-xs" style={{ color: "#8E99AC" }}>{data}</span>
             </div>
-            <div className="text-right text-xs" style={{ color: "#B9C2CF" }}>
-              <div style={{ color: "#EDEFF2" }}>{cliente || "Cliente não informado"}</div>
-              <div className="mt-1">{data}</div>
-              <div className="mt-1">{coords || "coordenadas não informadas"}</div>
+            <div className="flex justify-center px-8 pt-2 pb-6">
+              <img src={LOGO_SRC} alt="Lumie Solar" style={{ height: 92, maxWidth: "80%", objectFit: "contain" }} />
+            </div>
+            <div className="px-8 pb-7">
+              <h1 className="text-white text-2xl font-semibold text-center">
+                Análise de viabilidade{cliente ? ` — ${cliente}` : ""}
+              </h1>
             </div>
           </div>
 
-          <div className="px-8 py-6">
-            {/* dados do cliente */}
+          {/* ===================== PÁGINA 1 ===================== */}
+          <div className="px-8 py-6 page-break">
             <div className="text-xs font-semibold mb-2" style={{ color: BRAND.muted, letterSpacing: "0.04em" }}>DADOS GERAIS</div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-              {addingConsultor ? (
-                <input
-                  autoFocus
-                  value={novoConsultorInput}
-                  onChange={(e) => setNovoConsultorInput(e.target.value)}
-                  onBlur={confirmarNovoConsultor}
-                  onKeyDown={(e) => e.key === "Enter" && confirmarNovoConsultor()}
-                  placeholder="Digite o nome e aperte Enter"
-                  className="text-sm rounded-lg px-3 py-2 outline-none"
-                  style={{ border: `1px solid ${BRAND.green}`, color: "#111" }}
-                />
-              ) : (
-                <select
-                  value={consultor}
-                  onChange={(e) => handleConsultorSelect(e.target.value)}
-                  className="text-sm rounded-lg px-3 py-2 outline-none"
-                  style={{ border: `1px solid ${BRAND.border}`, color: consultor ? "#111" : BRAND.muted }}
-                >
-                  <option value="" disabled>Consultor responsável</option>
-                  {consultorOptions.map((n) => <option key={n} value={n}>{n}</option>)}
-                  <option value={NOVO_CONSULTOR}>+ Adicionar novo consultor</option>
-                </select>
-              )}
-              <input value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Nome do cliente"
-                className="text-sm rounded-lg px-3 py-2 outline-none" style={{ border: `1px solid ${BRAND.border}`, color: "#111" }} />
-              {addingCidade ? (
-                <input
-                  autoFocus
-                  value={novaCidadeInput}
-                  onChange={(e) => setNovaCidadeInput(e.target.value)}
-                  onBlur={confirmarNovaCidade}
-                  onKeyDown={(e) => e.key === "Enter" && confirmarNovaCidade()}
-                  placeholder="Digite a cidade e aperte Enter"
-                  className="text-sm rounded-lg px-3 py-2 outline-none"
-                  style={{ border: `1px solid ${BRAND.green}`, color: "#111" }}
-                />
-              ) : (
-                <select
-                  value={cidade}
-                  onChange={(e) => handleCidadeSelect(e.target.value)}
-                  className="text-sm rounded-lg px-3 py-2 outline-none"
-                  style={{ border: `1px solid ${BRAND.border}`, color: cidade ? "#111" : BRAND.muted }}
-                >
-                  <option value="" disabled>Cidade (SC)</option>
-                  {CIDADES_SC.map((c) => <option key={c} value={c}>{c}</option>)}
-                  <option value={OUTRA_CIDADE}>Outra cidade (fora de SC ou não listada)</option>
-                </select>
-              )}
+            <div className="mb-6">
+              <FieldRow label="Consultor responsável">
+                {addingConsultor ? (
+                  <input
+                    autoFocus
+                    value={novoConsultorInput}
+                    onChange={(e) => setNovoConsultorInput(e.target.value)}
+                    onBlur={confirmarNovoConsultor}
+                    onKeyDown={(e) => e.key === "Enter" && confirmarNovoConsultor()}
+                    placeholder="Digite o nome e aperte Enter"
+                    className="text-sm outline-none text-right"
+                    style={{ color: "#111" }}
+                  />
+                ) : (
+                  <select
+                    value={consultor}
+                    onChange={(e) => handleConsultorSelect(e.target.value)}
+                    className="text-sm outline-none text-right bg-transparent"
+                    style={{ color: consultor ? "#111" : BRAND.muted }}
+                  >
+                    <option value="" disabled>selecione</option>
+                    {consultorOptions.map((n) => <option key={n} value={n}>{n}</option>)}
+                    <option value={NOVO_CONSULTOR}>+ Adicionar novo consultor</option>
+                  </select>
+                )}
+              </FieldRow>
+              <FieldRow label="Nome do cliente">
+                <input value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Nome do cliente"
+                  className="text-sm outline-none text-right bg-transparent" style={{ color: "#111" }} />
+              </FieldRow>
+              <FieldRow label="Cidade">
+                {addingCidade ? (
+                  <input
+                    autoFocus
+                    value={novaCidadeInput}
+                    onChange={(e) => setNovaCidadeInput(e.target.value)}
+                    onBlur={confirmarNovaCidade}
+                    onKeyDown={(e) => e.key === "Enter" && confirmarNovaCidade()}
+                    placeholder="Digite a cidade e aperte Enter"
+                    className="text-sm outline-none text-right"
+                    style={{ color: "#111" }}
+                  />
+                ) : (
+                  <select
+                    value={cidade}
+                    onChange={(e) => handleCidadeSelect(e.target.value)}
+                    className="text-sm outline-none text-right bg-transparent"
+                    style={{ color: cidade ? "#111" : BRAND.muted }}
+                  >
+                    <option value="" disabled>selecione</option>
+                    {CIDADES_SC.map((c) => <option key={c} value={c}>{c}</option>)}
+                    <option value={OUTRA_CIDADE}>Outra cidade (fora de SC ou não listada)</option>
+                  </select>
+                )}
+              </FieldRow>
             </div>
-            <label className="text-xs block mb-1" style={{ color: BRAND.muted }}>Link do Google Maps (cole a localização do cliente)</label>
-            <input value={googleLink} onChange={(e) => handleGoogleLink(e.target.value)} placeholder="https://maps.google.com/..."
-              className="text-xs w-full rounded-lg px-2 py-1.5 outline-none mb-1" style={{ border: `1px solid ${BRAND.border}`, color: "#374151" }} />
-            <div className="text-xs mb-6" style={{ color: coordsAuto ? BRAND.green : "#A8AEB8" }}>
-              {coordsAuto ? "Coordenadas detectadas automaticamente do link — confira o cabeçalho."
-                : "Cole um link que já traga coordenadas (ex.: .../@-28.46,-48.99,...) para preencher sozinho. Sem coordenadas no link, não faço geocodificação de endereço — precisaria de uma API paga do Google para isso."}
+
+            <div className="no-print mb-6">
+              <label className="text-xs block mb-1" style={{ color: BRAND.muted }}>Link do Google Maps (cole a localização do cliente)</label>
+              <input value={googleLink} onChange={(e) => handleGoogleLink(e.target.value)} placeholder="https://maps.google.com/..."
+                className="text-xs w-full rounded-lg px-2 py-1.5 outline-none mb-1" style={{ border: `1px solid ${BRAND.border}`, color: "#374151" }} />
+              <div className="text-xs" style={{ color: coordsAuto ? BRAND.green : "#A8AEB8" }}>
+                {coordsAuto ? "Coordenadas detectadas automaticamente do link."
+                  : "Cole um link que já traga coordenadas (ex.: .../@-28.46,-48.99,...) para preencher sozinho. Sem coordenadas no link, não faço geocodificação de endereço — precisaria de uma API paga do Google para isso."}
+              </div>
+              <input value={endereco} onChange={(e) => setEndereco(e.target.value)} placeholder="Endereço do ponto (uso interno)"
+                className="text-xs w-full outline-none mt-2" style={{ color: BRAND.muted }} />
             </div>
 
             {/* mapa */}
             <div className="text-xs font-semibold mb-2" style={{ color: BRAND.muted, letterSpacing: "0.04em" }}>O PONTO</div>
             {mapaEmbedUrl ? (
-              <div className="rounded-xl mb-2 overflow-hidden no-print-hide-fallback" style={{ height: 220 }}>
+              <div className="rounded-xl mb-2 overflow-hidden" style={{ height: 220 }}>
                 <iframe
                   src={mapaEmbedUrl}
                   width="100%"
@@ -524,11 +565,9 @@ function RelatorioViabilidade() {
                 </div>
               </div>
             )}
-            <input value={endereco} onChange={(e) => setEndereco(e.target.value)} placeholder="Endereço do ponto"
-              className="text-xs w-full outline-none mb-1" style={{ color: BRAND.muted }} />
             <div className="text-xs mb-6" style={{ color: "#A8AEB8" }}>
               {mapaEmbedUrl
-                ? "mapa ao vivo do Google Maps — na hora de gerar o PDF, o mapa pode não aparecer (impressão de mapas embutidos é limitada); as coordenadas ficam registradas no cabeçalho de qualquer forma."
+                ? "mapa ao vivo do Google Maps — na hora de gerar o PDF, o mapa pode não aparecer (impressão de mapas embutidos é limitada)."
                 : "mapa ilustrativo — cole um link do Google Maps acima pra carregar o mapa real"}
             </div>
 
@@ -554,34 +593,44 @@ function RelatorioViabilidade() {
                 </div>
               ))}
             </div>
-            <button className="no-print text-xs font-semibold mb-6" style={{ color: BRAND.green }} onClick={addConcorrente}>+ adicionar concorrente</button>
+            <button className="no-print text-xs font-semibold" style={{ color: BRAND.green }} onClick={addConcorrente}>+ adicionar concorrente</button>
+          </div>
 
-            {/* simulação */}
-            <div className="text-xs font-semibold mb-2" style={{ color: BRAND.muted, letterSpacing: "0.04em" }}>SIMULAÇÃO DO INVESTIMENTO</div>
-            <div className="flex flex-wrap gap-2 mb-4">
-              <Chip label="Carros/dia" value={carrosPorDia} onChange={setCarrosPorDia} />
-              <Chip label="kWh/recarga" value={energiaMedia} onChange={setEnergiaMedia} />
-              <Chip label="Venda" value={valorVenda} onChange={setValorVenda} suffix="R$/kWh" step={0.01} />
-              <Chip label="Compra" value={valorCompra} onChange={setValorCompra} suffix="R$/kWh" step={0.01} />
-              <Chip label="Take rate" value={takeRatePct} onChange={setTakeRatePct} suffix="%" step={0.5} />
-              <Chip label="Imposto" value={impostoPct} onChange={setImpostoPct} suffix="%" step={0.5} />
-              <SelectChip label="Aluguel" value={aluguelModo} options={["Percentual", "Fixo"]} onChange={setAluguelModo} />
-              {aluguelModo === "Percentual" ? (
-                <Chip label="Valor do aluguel" value={aluguelPct} onChange={setAluguelPct} suffix="%" step={0.5} />
-              ) : (
-                <Chip label="Valor do aluguel" value={aluguelFixo} onChange={setAluguelFixo} suffix="R$" step={10} />
-              )}
-              <Chip label="Opex/mês" value={opexMensal} onChange={setOpexMensal} suffix="R$" step={10} />
-              <SelectChip label="Carregador" value={tipoCarregador} options={["40 kW", "80 kW"]} onChange={setTipoCarregador} />
-              <Chip label="Horizonte" value={mesesContrato} onChange={setMesesContrato} suffix="meses" step={1} />
-              <SelectChip label="Estrutura inclusa" value={estruturaInclusa} options={["Sim", "Não"]} onChange={setEstruturaInclusa} />
-              <SelectChip label="Padrão de entrada" value={padraoEntrada} options={["70A", "125A", "Não"]} onChange={setPadraoEntrada} />
+          {/* ===================== PÁGINA 2 ===================== */}
+          <div className="px-8 py-6 page-break">
+            <div className="text-xs font-semibold mb-3" style={{ color: BRAND.muted, letterSpacing: "0.04em" }}>SIMULAÇÃO DO INVESTIMENTO</div>
+            <div className="grid grid-cols-3 gap-x-4">
+              <FieldRow label="Carros/dia"><Chip value={carrosPorDia} onChange={setCarrosPorDia} bare /></FieldRow>
+              <FieldRow label="kWh/recarga"><Chip value={energiaMedia} onChange={setEnergiaMedia} bare /></FieldRow>
+              <FieldRow label="Venda"><Chip value={valorVenda} onChange={setValorVenda} suffix="R$/kWh" step={0.01} bare /></FieldRow>
+              <FieldRow label="Compra"><Chip value={valorCompra} onChange={setValorCompra} suffix="R$/kWh" step={0.01} bare /></FieldRow>
+              <FieldRow label="Take rate"><Chip value={takeRatePct} onChange={setTakeRatePct} suffix="%" step={0.5} bare /></FieldRow>
+              <FieldRow label="Imposto"><Chip value={impostoPct} onChange={setImpostoPct} suffix="%" step={0.5} bare /></FieldRow>
+              <FieldRow label="Aluguel"><SelectChip value={aluguelModo} options={["Percentual", "Fixo"]} onChange={setAluguelModo} bare /></FieldRow>
+              <FieldRow label="Valor do aluguel">
+                {aluguelModo === "Percentual"
+                  ? <Chip value={aluguelPct} onChange={setAluguelPct} suffix="%" step={0.5} bare />
+                  : <Chip value={aluguelFixo} onChange={setAluguelFixo} suffix="R$" step={10} bare />}
+              </FieldRow>
+              <FieldRow label="Opex/mês"><Chip value={opexMensal} onChange={setOpexMensal} suffix="R$" step={10} bare /></FieldRow>
+              <FieldRow label="Carregador"><SelectChip value={tipoCarregador} options={["40 kW", "80 kW"]} onChange={setTipoCarregador} bare /></FieldRow>
+              <FieldRow label="Horizonte"><Chip value={mesesContrato} onChange={setMesesContrato} suffix="meses" step={1} bare /></FieldRow>
+              <FieldRow label="Estrutura inclusa"><SelectChip value={estruturaInclusa} options={["Sim", "Não"]} onChange={setEstruturaInclusa} bare /></FieldRow>
+              <FieldRow label="Padrão de entrada"><SelectChip value={padraoEntrada} options={["70A", "125A", "Não"]} onChange={setPadraoEntrada} bare /></FieldRow>
             </div>
-            <div className="text-xs mb-4" style={{ color: BRAND.muted }}>
-              Investimento total: <span style={{ fontWeight: 700, color: "#111" }}>{fmtBRL(capex)}</span> — carregador {fmtBRL(custoCarregador)} + estrutura {fmtBRL(custoEstrutura)} + padrão de entrada {fmtBRL(custoPadrao)}
+
+            <div className="mt-6 mb-2">
+              <div className="text-xs" style={{ color: BRAND.muted }}>Investimento total</div>
+              <div className="text-4xl" style={{ fontFamily: "inherit", fontWeight: 700, color: "#111" }}>{fmtBRL(capex)}</div>
+              <div className="text-sm mt-2" style={{ color: "#374151" }}>
+                <div>Carregador ({tipoCarregador}): {fmtBRL(custoCarregador)}</div>
+                <div>Estrutura: {fmtBRL(custoEstrutura)}</div>
+                <div>Padrão de entrada: {fmtBRL(custoPadrao)}</div>
+              </div>
             </div>
+
             {estruturaInclusa === "Sim" && (
-              <div className="rounded-xl overflow-hidden mb-4" style={{ border: `1px solid ${BRAND.border}` }}>
+              <div className="rounded-xl overflow-hidden mt-5" style={{ border: `1px solid ${BRAND.border}` }}>
                 <img
                   src={tipoCarregador === "80 kW" ? ESTRUTURA_REF_80KW_SRC : ESTRUTURA_REF_40KW_SRC}
                   alt="Referência da estrutura Lumie Solar"
@@ -593,7 +642,12 @@ function RelatorioViabilidade() {
                 </div>
               </div>
             )}
+          </div>
 
+          {/* ===================== PÁGINA 3 ===================== */}
+          <div className="px-8 py-6">
+            <div className="text-xs font-semibold mb-1" style={{ color: BRAND.muted, letterSpacing: "0.04em" }}>PROPOSTA COMERCIAL</div>
+            <h2 className="text-lg font-semibold mb-4" style={{ color: "#111" }}>DRE projetada (mensal)</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <DreRow label="Receita bruta" value={fmtBRL(calc.receitaBruta)} />
@@ -613,9 +667,8 @@ function RelatorioViabilidade() {
               </div>
             </div>
 
-            {/* leitura */}
-            <div className="mt-6 rounded-lg p-3 text-sm" style={{ background: "#F4F6F5", borderLeft: `3px solid ${BRAND.green}` }}>
-              <div className="text-xs font-semibold mb-1" style={{ color: BRAND.muted, letterSpacing: "0.04em" }}>LEITURA DO PONTO</div>
+            <div className="no-print mt-6 rounded-lg p-3 text-sm" style={{ background: "#F4F6F5", borderLeft: `3px solid ${BRAND.green}` }}>
+              <div className="text-xs font-semibold mb-1" style={{ color: BRAND.muted, letterSpacing: "0.04em" }}>LEITURA DO PONTO (uso interno)</div>
               <textarea value={leitura} onChange={(e) => setLeitura(e.target.value)} placeholder="Observações sobre concorrência, acesso, fluxo do local..."
                 className="w-full bg-transparent outline-none resize-none" rows={2} style={{ color: "#374151" }} />
             </div>
